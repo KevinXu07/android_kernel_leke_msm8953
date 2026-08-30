@@ -6,8 +6,8 @@
 #define ELAN_X_MAX      1280
 #define ELAN_Y_MAX      2112
 #else
-#define ELAN_X_MAX      1024
-#define ELAN_Y_MAX      1024
+#define ELAN_X_MAX      4095
+#define ELAN_Y_MAX      2047
 #endif
 /* Quanta BU10SW, Stanley Tsao, 2015.12.04, Change for XU1 400x400 panel { */
 

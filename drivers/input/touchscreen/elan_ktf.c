@@ -43,7 +43,7 @@
 #define ELAN_RESUME_RST
 #define DEVICE_NAME "elan_ktf" 
 #define EKTF3K_FLASH
-#if 1 /* Only one of the protocols can be enabled */
+#if 0 /* L05 controller reports HID-over-I2C packets. */
 #define PROTOCOL_A    /* multi-touch protocol  */
 #else
 #define PROTOCOL_B    /* Default: PROTOCOL B */
@@ -133,6 +133,7 @@
 
 
 #define PACKET_SIZE		8		/* support 2 fingers packet for watch */
+#define ELAN_HID_PACKET_SIZE    63              /* complete L05 HID report, including length */
 #define MAX_FINGER_SIZE		255
 #define PWR_STATE_DEEP_SLEEP	0
 #define PWR_STATE_NORMAL		1
@@ -260,7 +261,7 @@ static bool is_quanta_gesture_to_recovery_point_on_the_line(uint16_t reported_x,
 	return true;
 }
 
-static int quanta_gesture_to_recovery_check(uint16_t reported_x, uint16_t reported_y)
+static int __maybe_unused quanta_gesture_to_recovery_check(uint16_t reported_x, uint16_t reported_y)
 {
     // Check the 1st point
     if(!(quanta_gesture_to_recovery & QUANTA_GESTURE_TO_RECOVERY_1_POINT_FLAG))
@@ -368,7 +369,7 @@ static bool is_quanta_gesture_to_bootlader_point_on_the_line(uint16_t reported_x
 	return true;
 }
 
-static int quanta_gesture_to_bootloader_check(uint16_t reported_x, uint16_t reported_y)
+static int __maybe_unused quanta_gesture_to_bootloader_check(uint16_t reported_x, uint16_t reported_y)
 {
 
     // Check the 1st point
@@ -555,8 +556,8 @@ int FW_VERSION=0x00;
 int X_RESOLUTION=1344;	// nexus7 1280 1344
 int Y_RESOLUTION=2240;	// nexus7 2112 2240
 #else /* Quanta XU1 project */
-int X_RESOLUTION=1024;	
-int Y_RESOLUTION=1024; 
+int X_RESOLUTION=4095;	
+int Y_RESOLUTION=2047; 
 #endif
 /* Quanta BU10SW, Stanley Tsao, 2015.12.01, For XU1 touch resolution } */
 
@@ -4045,7 +4046,7 @@ static void elan_ktf_ts_report_data(struct i2c_client *client, uint8_t *buf)
 		finger_num = buf[62];
 		if (finger_num > 5)	finger_num = 5;   /* support 5 fingers    */ 
 		idx=3;
-		num = 5;
+		num = finger_num;
 		for(i = 0; i < finger_num; i++){						
 			if ((buf[idx]&0x03) == 0x00)	active = 0;   /* 0x03: finger down, 0x00 finger up  */
 			else	active = 1;
@@ -4311,7 +4312,7 @@ static irqreturn_t elan_ktf_ts_irq_handler(int irq, void *dev_id)
 	uint8_t buf[4+PACKET_SIZE] = { 0 };
 	uint8_t buf1[PACKET_SIZE] = { 0 };
 #else
-	uint8_t buf[PACKET_SIZE] = { 0 };
+	uint8_t buf[ELAN_HID_PACKET_SIZE] = { 0 };
 #endif
 
 #if defined( ESD_CHECK )
@@ -4331,7 +4332,7 @@ static irqreturn_t elan_ktf_ts_irq_handler(int irq, void *dev_id)
 		return IRQ_HANDLED;
 	}
 #else
-	rc = elan_ktf_ts_recv_data(ts->client, buf, PACKET_SIZE);
+	rc = elan_ktf_ts_recv_data(ts->client, buf, ELAN_HID_PACKET_SIZE);
 	if (rc < 0)
 	{
 		printk("[elan] Received the packet Error.\n");
@@ -4881,6 +4882,7 @@ const struct i2c_device_id *id)
     #endif
     
 	input_set_capability(ts->input_dev, EV_KEY, KEY_POWER);
+    __set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit);
 
 	err = input_register_device(ts->input_dev);
 	if (err) {
