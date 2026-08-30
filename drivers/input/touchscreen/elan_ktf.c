@@ -4060,13 +4060,15 @@ static void elan_ktf_ts_report_data(struct i2c_client *client, uint8_t *buf)
 				//y = Y_RESOLUTION - y;
 				input_report_abs(idev, ABS_MT_TOUCH_MAJOR, 100);
 				input_report_abs(idev, ABS_MT_PRESSURE, 100);
-				input_report_abs(idev, ABS_MT_POSITION_X, x);
-				input_report_abs(idev, ABS_MT_POSITION_Y, y);
+				input_report_abs(idev, ABS_MT_POSITION_X, y);
+				input_report_abs(idev, ABS_MT_POSITION_Y, x);
 				touch_debug(DEBUG_INFO, "[elan hid] i=%d finger_id=%d x=%d y=%d Finger NO.=%d \n", i, finger_id, x, y, finger_num);
 			}
 			mTouchStatus[i] = active;
 			idx += 11;
 		}
+		input_report_key(idev, BTN_TOUCH, num != 0);
+
 		if (num == 0){  
             printk("[elan] Release ALL Finger\n");
 			input_report_key(idev, BTN_TOUCH, 0); //for all finger up
@@ -4849,8 +4851,8 @@ const struct i2c_device_id *id)
 	input_set_abs_params(ts->input_dev, ABS_TOOL_WIDTH, 0, MAX_FINGER_SIZE, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_MT_TRACKING_ID, 0, FINGER_NUM, 0, 0);	
 #endif
-	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_Y, 0, Y_RESOLUTION, 0, 0);
-	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_X, 0, X_RESOLUTION, 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_Y, 0, X_RESOLUTION, 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_X, 0, Y_RESOLUTION, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0, MAX_FINGER_SIZE, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_PRESSURE, 0, MAX_FINGER_SIZE, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_MT_PRESSURE, 0, MAX_FINGER_SIZE, 0, 0);
