@@ -556,8 +556,8 @@ int FW_VERSION=0x00;
 int X_RESOLUTION=1344;	// nexus7 1280 1344
 int Y_RESOLUTION=2240;	// nexus7 2112 2240
 #else /* Quanta XU1 project */
-int X_RESOLUTION=4095;	
-int Y_RESOLUTION=2047; 
+int X_RESOLUTION=3392;	
+int Y_RESOLUTION=2112; 
 #endif
 /* Quanta BU10SW, Stanley Tsao, 2015.12.01, For XU1 touch resolution } */
 
