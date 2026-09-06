@@ -298,6 +298,7 @@ ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
 	return ret;
 }
 
+#if (defined CONFIG_MACH_XIAOMI_MIDO) || (defined CONFIG_MACH_XIAOMI_TISSOT)
 static void *memcpy_pstore(void *dest, const void *src, size_t count)
 {
 	char *tmp = dest;
@@ -307,6 +308,7 @@ static void *memcpy_pstore(void *dest, const void *src, size_t count)
 		*tmp++ = *s++;
 	return dest;
 }
+#endif
 
 static void notrace persistent_ram_update(struct persistent_ram_zone *prz,
 	const void *s, unsigned int start, unsigned int count)

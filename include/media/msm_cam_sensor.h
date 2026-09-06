@@ -40,8 +40,15 @@ struct msm_camera_sensor_slave_info32 {
 	struct msm_sensor_power_setting_array32 power_setting_array;
 	uint8_t  is_init_params_valid;
 	struct msm_sensor_init_params sensor_init_params;
+#ifdef CONFIG_MACH_XIAOMI_MIDO
+	/* Newer camera userspace passes output_format at offset 1560. */
 	enum msm_sensor_output_format_t output_format;
-#ifndef CONFIG_MACH_XIAOMI_MIDO
+#else
+	/*
+	 * The L05 Nougat camera blob uses the legacy 1564-byte compat ABI: it
+	 * has no output_format member and places bypass_video_node_creation at
+	 * offset 1560.  Keep this input-only structure byte-compatible with it.
+	 */
 	uint8_t bypass_video_node_creation;
 #endif
 };

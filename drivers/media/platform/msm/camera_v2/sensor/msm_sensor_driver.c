@@ -763,9 +763,12 @@ int32_t msm_sensor_driver_probe(void *setting,
 				power_setting_array.power_down_setting);
 		slave_info->sensor_init_params =
 			slave_info32->sensor_init_params;
+#ifdef CONFIG_MACH_XIAOMI_MIDO
 		slave_info->output_format =
 			slave_info32->output_format;
-#ifndef CONFIG_MACH_XIAOMI_MIDO
+#else
+		/* Legacy L05 userspace does not carry output_format. */
+		slave_info->output_format = MSM_SENSOR_BAYER;
 		slave_info->bypass_video_node_creation =
 			!!slave_info32->bypass_video_node_creation;
 #endif
@@ -1007,6 +1010,10 @@ CSID_TG:
 		pr_err("failed: camera creat v4l2 rc %d", rc);
 		goto camera_power_down;
 	}
+	pr_info("%s: camera session %u (bypass=%u)\n",
+		slave_info->sensor_name,
+		s_ctrl->sensordata->sensor_info->session_id,
+		s_ctrl->bypass_video_node_creation);
 
 	/* Power down */
 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);

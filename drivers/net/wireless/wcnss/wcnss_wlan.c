@@ -255,7 +255,9 @@ static struct notifier_block wnb = {
 /* On SMD channel 4K of maximum data can be transferred, including message
  * header, so NV fragment size as next multiple of 1Kb is 3Kb.
  */
-#define NV_FRAGMENT_SIZE  3072
+/* L05 exposes only about 2 KiB of free space on this SMD channel. Keep the
+ * payload below that limit; the protocol carries the actual fragment size. */
+#define NV_FRAGMENT_SIZE  256
 #define MAX_CALIBRATED_DATA_SIZE  (64*1024)
 #define LAST_FRAGMENT        (1 << 0)
 #define MESSAGE_TO_FOLLOW    (1 << 1)
@@ -1845,16 +1847,29 @@ EXPORT_SYMBOL(wcnss_get_wlan_unsafe_channel);
 static int wcnss_smd_tx(void *data, int len)
 {
 	int ret = 0;
+	int avail;
 
-	ret = smd_write_avail(penv->smd_ch);
-	if (ret < len) {
-		pr_err("wcnss: no space available for smd frame\n");
+	if (!penv || !penv->smd_ch)
+		return -ENODEV;
+
+	avail = smd_write_avail(penv->smd_ch);
+	if (avail < len) {
+		/* Ask the remote side to interrupt us when it consumes data. */
+		smd_enable_read_intr(penv->smd_ch);
+		pr_err_ratelimited("wcnss: no space available for smd frame (%d/%d)\n",
+			avail, len);
 		return -ENOSPC;
 	}
 	ret = smd_write(penv->smd_ch, data, len);
-	if (ret < len) {
+	if (ret != len) {
+		/* Keep the retry path armed if the FIFO changed between the check
+		 * above and smd_write(). */
+		smd_enable_read_intr(penv->smd_ch);
 		pr_err("wcnss: failed to write Command %d", len);
-		ret = -ENODEV;
+		if (ret == -ENOMEM || ret == -ENOSPC)
+			ret = -ENOSPC;
+		else
+			ret = -ENODEV;
 	}
 	return ret;
 }
@@ -2391,6 +2406,9 @@ static void wcnss_nvbin_dnld(void)
 			__func__, NVBIN_FILE, ret);
 		goto out;
 	}
+	/* The build-version response is asynchronous on this SMD endpoint. Give
+	 * the remote FIFO time to drain before sending the first NV frame. */
+	msleep(500);
 
 	/* First 4 bytes in nv blob is validity bitmap.
 	 * We cannot validate nv, so skip those 4 bytes.
@@ -2450,7 +2468,7 @@ static void wcnss_nvbin_dnld(void)
 		ret = wcnss_smd_tx(outbuffer, dnld_req_msg->hdr.msg_len);
 
 		retry_count = 0;
-		while ((ret == -ENOSPC) && (retry_count <= 3)) {
+		while ((ret == -ENOSPC) && (retry_count < 100)) {
 			pr_debug("wcnss: %s: smd tx failed, ENOSPC\n",
 				__func__);
 			pr_debug("fragment: %d, len: %d, TotFragments: %d, retry_count: %d\n",
@@ -2471,6 +2489,14 @@ static void wcnss_nvbin_dnld(void)
 				total_fragments, retry_count);
 			goto err_dnld;
 		}
+
+		/*
+		 * The L05 Pronto firmware command queue can overflow before the SMD
+		 * FIFO applies back-pressure. Pace successful NV fragments so its
+		 * command worker can drain and avoid wconn_util_command_buff asserts.
+		 */
+		if (count + 1 < total_fragments)
+			usleep_range(8000, 10000);
 	}
 
 err_dnld:

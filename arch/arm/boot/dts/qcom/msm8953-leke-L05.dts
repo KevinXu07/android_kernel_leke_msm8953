@@ -2861,6 +2861,7 @@
 
 		qcom,iommu@1e00000 {
 			compatible = "qcom,msm-smmu-v2", "qcom,msm-mmu-500";
+			#iommu-cells = <0x1>;
 			#address-cells = <0x1>;
 			#size-cells = <0x1>;
 			ranges;
@@ -11256,6 +11257,14 @@
 		#address-cells = <0x2>;
 		#size-cells = <0x2>;
 		ranges;
+        /* Keep a 1 MiB crash record across a watchdog/hard reset. */
+        pstore_reserve_mem_region@0 {
+            linux,reserve-contiguous-region;
+            linux,reserve-region;
+            linux,remove-completely;
+            reg = <0x0 0x9ff00000 0x0 0x00100000>;
+            label = "pstore_reserve_mem";
+        };
 
 		other_ext_region@0 {
 			compatible = "removed-dma-pool";

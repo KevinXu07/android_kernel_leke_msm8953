@@ -3792,8 +3792,19 @@ CONFIG_ION_MSM=y
 #
 # Qualcomm Atheros Prima WLAN module
 #
+# The L05 WCNSS/Pronto firmware requires the legacy Prima host driver.  Without
+# this option the firmware boots but no wlan0 netdevice is ever registered.
 # CONFIG_PRIMA_WLAN is not set
-# CONFIG_PRONTO_WLAN is not set
+CONFIG_PRONTO_WLAN=y
+# CONFIG_PRIMA_WLAN_BTAMP is not set
+CONFIG_PRIMA_WLAN_LFR=y
+CONFIG_PRIMA_WLAN_OKC=y
+CONFIG_PRIMA_WLAN_11AC_HIGH_TP=y
+CONFIG_WLAN_FEATURE_11W=y
+CONFIG_QCOM_VOWIFI_11R=y
+CONFIG_ENABLE_LINUX_REG=y
+CONFIG_WLAN_OFFLOAD_PACKETS=y
+CONFIG_QCOM_TDLS=y
 # CONFIG_GOLDFISH is not set
 
 #
@@ -4220,7 +4231,10 @@ CONFIG_MISC_FILESYSTEMS=y
 # CONFIG_QNX4FS_FS is not set
 # CONFIG_QNX6FS_FS is not set
 # CONFIG_ROMFS_FS is not set
-# CONFIG_PSTORE is not set
+CONFIG_PSTORE=y
+CONFIG_PSTORE_CONSOLE=y
+# CONFIG_PSTORE_PMSG is not set
+CONFIG_PSTORE_RAM=y
 # CONFIG_SYSV_FS is not set
 # CONFIG_UFS_FS is not set
 # CONFIG_F2FS_FS is not set
