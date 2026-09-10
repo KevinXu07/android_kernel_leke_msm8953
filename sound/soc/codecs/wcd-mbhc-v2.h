@@ -366,6 +366,8 @@ struct wcd_mbhc_cb {
 };
 
 struct wcd_mbhc {
+	/* Optional L05 board gates; absent on all other boards. */
+	struct l05_audio_gates *l05_gates;
 	/* Delayed work to report long button press */
 	struct delayed_work mbhc_btn_dwork;
 	int buttons_pressed;

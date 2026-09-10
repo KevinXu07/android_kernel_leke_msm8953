@@ -32,6 +32,7 @@
 #include <sound/jack.h>
 #include "wcd-mbhc-v2.h"
 #include "wcdcal-hwdep.h"
+#include "wcd-mbhc-l05-gates.h"
 
 #define WCD_MBHC_JACK_MASK (SND_JACK_HEADSET | SND_JACK_OC_HPHL | \
 			   SND_JACK_OC_HPHR | SND_JACK_LINEOUT | \
@@ -263,6 +264,7 @@ static int wcd_event_notify(struct notifier_block *self, unsigned long val,
 
 	pr_debug("%s: event %s (%d)\n", __func__,
 		 wcd_mbhc_get_event_string(event), event);
+	l05_audio_gates_event(mbhc->l05_gates, event);
 	if (mbhc->mbhc_cb->micbias_enable_status) {
 		micbias2 = mbhc->mbhc_cb->micbias_enable_status(mbhc,
 								MIC_BIAS_2);
@@ -2493,6 +2495,9 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 	mutex_init(&mbhc->hphr_pa_lock);
 
 	/* Register event notifier */
+	ret = l05_audio_gates_init(mbhc);
+	if (ret)
+		return ret;
 	mbhc->nblock.notifier_call = wcd_event_notify;
 	if (mbhc->mbhc_cb->register_notifier) {
 		ret = mbhc->mbhc_cb->register_notifier(codec, &mbhc->nblock,
@@ -2500,6 +2505,7 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 		if (ret) {
 			pr_err("%s: Failed to register notifier %d\n",
 				__func__, ret);
+			l05_audio_gates_exit(mbhc);
 			return ret;
 		}
 	}
@@ -2601,6 +2607,7 @@ err_btn_press_irq:
 err_mbhc_sw_irq:
 	if (mbhc->mbhc_cb->register_notifier)
 		mbhc->mbhc_cb->register_notifier(codec, &mbhc->nblock, false);
+	l05_audio_gates_exit(mbhc);
 	mutex_destroy(&mbhc->codec_resource_lock);
 err:
 #if (defined CONFIG_MACH_XIAOMI_MIDO)
@@ -2626,6 +2633,7 @@ void wcd_mbhc_deinit(struct wcd_mbhc *mbhc)
 	mbhc->mbhc_cb->free_irq(codec, mbhc->intr_ids->hph_right_ocp, mbhc);
 	if (mbhc->mbhc_cb && mbhc->mbhc_cb->register_notifier)
 		mbhc->mbhc_cb->register_notifier(codec, &mbhc->nblock, false);
+	l05_audio_gates_exit(mbhc);
 	mutex_destroy(&mbhc->codec_resource_lock);
 #if (defined CONFIG_MACH_XIAOMI_MIDO)
 	switch_dev_unregister(&accdet_data);
